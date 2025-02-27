@@ -1,0 +1,63 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 62.5%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  font-family: "Space Grotesk", serif;
+}
+
+#root {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.card-back-div {
+  position: absolute;
+  right: 1.6rem;
+  top: 4.6rem;
+}
+
+.card-front-div {
+  display: inline-flex;
+  position: absolute;
+  left: 1.7rem;
+  top: 12.6rem;
+}
+
+.returned-span {
+  font-size: 1.2rem;
+}
+
+@media only screen and (min-width: 90rem) {
+  #root {
+    justify-content: start;
+    align-items: center;
+    gap: 34.9rem;
+  }
+
+  .card-back-div {
+    position: absolute;
+    left: 25.8rem;
+    bottom: 8.6rem;
+    right: unset;
+    top: unset;
+  }
+
+  .card-front-div {
+    position: absolute;
+    left: 16.4rem;
+    top: 8.7rem;
+  }
+}
