@@ -1,5 +1,6 @@
 import "./index.css";
 import styled from "styled-components";
+import { useEffect, useState } from "react";
 
 export default function LowerSection({
   data,
@@ -8,64 +9,91 @@ export default function LowerSection({
   setIsFilled,
   setIsCompleted,
 }) {
+  const [errors, setErrors] = useState({
+    name: "",
+    number: "",
+    month: "",
+    year: "",
+    cvc: "",
+  });
+
   const handleClick = () => {
-    const allFieldsFilled = Object.values(isFilled).every(
-      (filled) => filled === true
-    );
+    const updatedErrors = {
+      name: "",
+      number: "",
+      month: "",
+      year: "",
+      cvc: "",
+    };
 
-    if (allFieldsFilled) {
-      setIsCompleted(true);
-    } else {
-      setIsCompleted(false);
-    }
+    const updatedIsFilled = { ...isFilled };
 
-    setIsFilled((prev) => {
-      const updated = { ...prev };
+    for (let key in data) {
+      if (!data[key] || data[key].trim() === "") {
+        updatedIsFilled[key] = false;
+        updatedErrors[key] = "Can't be blank";
+      } else {
+        updatedIsFilled[key] = true;
+      }
 
-      for (let key in data) {
-        if (!data[key] || data[key].trim() === "") {
-          updated[key] = false;
-        } else {
-          updated[key] = true;
-        }
-
-        if (key === "number") {
-          const numberWithoutSpaces = data[key].replace(/\s+/g, "");
-          if (
-            numberWithoutSpaces.length < 16 ||
-            isNaN(Number(numberWithoutSpaces))
-          ) {
-            updated[key] = false;
-          }
-        }
-
-        if (
-          key === "month" &&
-          (isNaN(Number(data.month)) ||
-            Number(data.month) > 12 ||
-            Number(data.month) < 1)
-        ) {
-          updated[key] = false;
-        }
-
-        if (
-          key === "year" &&
-          (isNaN(Number(data.year)) || data.year.length !== 2)
-        ) {
-          updated[key] = false;
-        }
-
-        if (key === "name" && !/^[a-zA-Z\s]+$/.test(data.name)) {
-          updated[key] = false;
-        }
-
-        if (key === "cvc" && isNaN(Number(data.cvc))) {
-          updated[key] = false;
+      if (key === "number" && updatedErrors[key] === "") {
+        const numberWithoutSpaces = data[key].replace(/\s+/g, "");
+        if (numberWithoutSpaces.length < 16) {
+          updatedIsFilled[key] = false;
+          updatedErrors[key] = "Not enough length";
+        } else if (isNaN(Number(numberWithoutSpaces))) {
+          updatedIsFilled[key] = false;
+          updatedErrors[key] = "Wrong format, numbers only!";
         }
       }
 
-      return updated;
-    });
+      if (key === "month" && updatedErrors[key] === "") {
+        if (
+          isNaN(Number(data.month)) ||
+          Number(data.month) > 12 ||
+          Number(data.month) < 1
+        ) {
+          updatedIsFilled[key] = false;
+          updatedErrors[key] = "Invalid month";
+        }
+      }
+
+      if (key === "year" && updatedErrors[key] === "") {
+        if (isNaN(Number(data.year)) || data.year.length !== 2) {
+          updatedIsFilled[key] = false;
+          updatedErrors[key] = "Must be a number";
+        }
+      }
+
+      if (key === "name" && updatedErrors[key] === "") {
+        if (!/^[a-zA-Z\s]+$/.test(data.name)) {
+          updatedIsFilled[key] = false;
+          updatedErrors[key] = "Can't contain numbers or symbols";
+        }
+      }
+
+      if (key === "cvc" && updatedErrors[key] === "") {
+        if (isNaN(Number(data.cvc))) {
+          updatedIsFilled[key] = false;
+          updatedErrors[key] = "Must be a number";
+        }
+      }
+    }
+
+    setIsFilled(updatedIsFilled);
+    setErrors(updatedErrors);
+  };
+
+  useEffect(() => {
+    const allFieldsFilled = Object.values(isFilled).every(
+      (filled) => filled === true
+    );
+    setIsCompleted(allFieldsFilled);
+  }, [isFilled, setIsCompleted]);
+
+  const handleInputChange = (key, value) => {
+    setData((prevData) => ({ ...prevData, [key]: value }));
+    setErrors((prevErrors) => ({ ...prevErrors, [key]: "" }));
   };
 
   return (
@@ -74,19 +102,13 @@ export default function LowerSection({
         <span>CARDHOLDER NAME</span>
         <input
           value={data.name}
-          onChange={(event) =>
-            setData((prevData) => ({ ...prevData, name: event.target.value }))
-          }
+          onChange={(event) => handleInputChange("name", event.target.value)}
           style={!isFilled.name ? { borderColor: "#FF5050" } : {}}
           placeholder="e.g Jane Appleseed"
         />
-        {!isFilled.name && (
+        {errors.name && (
           <span className="returned-span" style={{ color: "#FF5050" }}>
-            {data.name === ""
-              ? "Can't be blank"
-              : !/^[a-zA-Z\s]+$/.test(data.name)
-              ? "Can't contain numbers or symbols"
-              : null}
+            {errors.name}
           </span>
         )}
       </InputSection>
@@ -104,21 +126,16 @@ export default function LowerSection({
             }
 
             formattedValue = formattedValue.trim();
-            setData((prevData) => ({
-              ...prevData,
-              number: formattedValue,
-            }));
+            handleInputChange("number", formattedValue);
           }}
           style={!isFilled.number ? { borderColor: "#FF5050" } : {}}
           maxLength={19}
           type="text"
           placeholder="e.g 1234 5678 9123 0000"
         />
-        {!isFilled.number && (
+        {errors.number && (
           <span className="returned-span" style={{ color: "#FF5050" }}>
-            {data.number.replace(/\s+/g, "").length < 16
-              ? "Card number length is not enough!"
-              : "Wrong format, numbers only!"}
+            {errors.number}
           </span>
         )}
       </InputSection>
@@ -131,10 +148,7 @@ export default function LowerSection({
               <input
                 value={data.month}
                 onChange={(event) =>
-                  setData((prevData) => ({
-                    ...prevData,
-                    month: event.target.value,
-                  }))
+                  handleInputChange("month", event.target.value)
                 }
                 style={!isFilled.month ? { borderColor: "#FF5050" } : {}}
                 type="text"
@@ -146,10 +160,7 @@ export default function LowerSection({
               <input
                 value={data.year}
                 onChange={(event) =>
-                  setData((prevData) => ({
-                    ...prevData,
-                    year: event.target.value,
-                  }))
+                  handleInputChange("year", event.target.value)
                 }
                 style={!isFilled.year ? { borderColor: "#FF5050" } : {}}
                 type="text"
@@ -158,47 +169,30 @@ export default function LowerSection({
               />
             </InputSection>
           </DateWrap>
-          {!isFilled.month || !isFilled.year ? (
+          {(errors.month || errors.year) && (
             <span
               className="returned-span"
               style={{ display: "flex", width: "100%", color: "#FF5050" }}>
-              {data.month === "" || data.year === ""
-                ? "Can't be blank"
-                : isNaN(Number(data.month)) ||
-                  Number(data.month) > 12 ||
-                  Number(data.month) < 1
-                ? "Invalid month"
-                : isNaN(Number(data.year))
-                ? "Must be a number"
-                : null}
+              {errors.month || errors.year}
             </span>
-          ) : null}
+          )}
         </DoubleInput>
 
         <InputSection>
           <span>CVC</span>
           <input
             value={data.cvc}
-            onChange={(event) =>
-              setData((prevData) => ({
-                ...prevData,
-                cvc: event.target.value,
-              }))
-            }
+            onChange={(event) => handleInputChange("cvc", event.target.value)}
             style={!isFilled.cvc ? { borderColor: "#FF5050" } : {}}
             type="text"
             maxLength={3}
             placeholder="e.g. 123"
           />
-          {!isFilled.cvc ? (
+          {errors.cvc && (
             <span className="returned-span" style={{ color: "#FF5050" }}>
-              Can't be blank
+              {errors.cvc}
             </span>
-          ) : isNaN(Number(data.cvc)) ? (
-            <span className="returned-span" style={{ color: "#FF5050" }}>
-              Must be a number
-            </span>
-          ) : null}
+          )}
         </InputSection>
       </OtherDetailsSection>
 
