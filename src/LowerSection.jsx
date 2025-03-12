@@ -2,13 +2,7 @@ import "./index.css";
 import styled from "styled-components";
 import { useEffect, useState } from "react";
 
-export default function LowerSection({
-  data,
-  setData,
-  isFilled,
-  setIsFilled,
-  setIsCompleted,
-}) {
+export default function LowerSection({ data, setData, setIsCompleted }) {
   const [errors, setErrors] = useState({
     name: "",
     number: "",
@@ -17,8 +11,16 @@ export default function LowerSection({
     cvc: "",
   });
 
-  const handleClick = () => {
-    const updatedErrors = {
+  const handleClick = (e) => {
+    e.preventDefault();
+
+    const nameRegex = /^[A-Za-z\s]+$/;
+    const cardNumberRegex = /^\d{4}(\s|-)?\d{4}(\s|-)?\d{4}(\s|-)?\d{4}$/;
+    const monthRegex = /^(0[1-9]|1[0-2])$/;
+    const yearRegex = /^\d{2}$/;
+    const cvcRegex = /^(?!000)[0-9]{3,4}$/;
+
+    const newErrors = {
       name: "",
       number: "",
       month: "",
@@ -26,84 +28,68 @@ export default function LowerSection({
       cvc: "",
     };
 
-    const updatedIsFilled = { ...isFilled };
-
-    for (let key in data) {
-      if (!data[key] || data[key].trim() === "") {
-        updatedIsFilled[key] = false;
-        updatedErrors[key] = "Can't be blank";
-      } else {
-        updatedIsFilled[key] = true;
-      }
-
-      if (key === "number" && updatedErrors[key] === "") {
-        const numberWithoutSpaces = data[key].replace(/\s+/g, "");
-        if (numberWithoutSpaces.length < 16) {
-          updatedIsFilled[key] = false;
-          updatedErrors[key] = "Not enough length";
-        } else if (isNaN(Number(numberWithoutSpaces))) {
-          updatedIsFilled[key] = false;
-          updatedErrors[key] = "Wrong format, numbers only!";
-        }
-      }
-
-      if (key === "month" && updatedErrors[key] === "") {
-        if (
-          isNaN(Number(data.month)) ||
-          Number(data.month) > 12 ||
-          Number(data.month) < 1
-        ) {
-          updatedIsFilled[key] = false;
-          updatedErrors[key] = "Invalid month";
-        }
-      }
-
-      if (key === "year" && updatedErrors[key] === "") {
-        if (isNaN(Number(data.year)) || data.year.length !== 2) {
-          updatedIsFilled[key] = false;
-          updatedErrors[key] = "Must be a number";
-        }
-      }
-
-      if (key === "name" && updatedErrors[key] === "") {
-        if (!/^[a-zA-Z\s]+$/.test(data.name)) {
-          updatedIsFilled[key] = false;
-          updatedErrors[key] = "Can't contain numbers or symbols";
-        }
-      }
-
-      if (key === "cvc" && updatedErrors[key] === "") {
-        if (isNaN(Number(data.cvc))) {
-          updatedIsFilled[key] = false;
-          updatedErrors[key] = "Must be a number";
-        }
-      }
+    if (!data.name) {
+      newErrors.name = "Can't be blank";
+    } else if (!nameRegex.test(data.name)) {
+      newErrors.name = "Invalid name";
     }
 
-    setIsFilled(updatedIsFilled);
-    setErrors(updatedErrors);
+    if (!data.number) {
+      newErrors.number = "Can't be blank";
+    } else if (!cardNumberRegex.test(data.number)) {
+      newErrors.number = "Invalid number";
+    }
+
+    if (!data.month) {
+      newErrors.month = "Can't be blank";
+    } else if (!monthRegex.test(data.month)) {
+      newErrors.month = "Invalid month";
+    }
+
+    if (!data.year) {
+      newErrors.year = "Can't be blank";
+    } else if (!yearRegex.test(data.year)) {
+      newErrors.year = "Invalid year";
+    }
+
+    if (!data.cvc) {
+      newErrors.cvc = "Can't be blank";
+    } else if (!cvcRegex.test(data.cvc)) {
+      newErrors.cvc = "Invalid cvc";
+    }
+
+    setErrors(newErrors);
+
+    const allErrorsEmpty = Object.values(newErrors).every(
+      (error) => error === ""
+    );
+    if (allErrorsEmpty) {
+      setIsCompleted(true);
+    }
   };
 
-  useEffect(() => {
-    const allFieldsFilled = Object.values(isFilled).every(
-      (filled) => filled === true
-    );
-    setIsCompleted(allFieldsFilled);
-  }, [isFilled, setIsCompleted]);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
-  const handleInputChange = (key, value) => {
-    setData((prevData) => ({ ...prevData, [key]: value }));
-    setErrors((prevErrors) => ({ ...prevErrors, [key]: "" }));
+    if (name === "number") {
+      const digitsOnly = value.replace(/\D/g, "");
+      const formattedValue = digitsOnly.match(/.{1,4}/g)?.join(" ") || "";
+      setData({ ...data, number: formattedValue });
+    } else {
+      setData({ ...data, [name]: value });
+    }
   };
 
   return (
-    <Container>
+    <Container onSubmit={handleClick}>
       <InputSection>
-        <span>CARDHOLDER NAME</span>
+        <label htmlFor="name">CARDHOLDER NAME</label>
         <input
           value={data.name}
-          onChange={(event) => handleInputChange("name", event.target.value)}
-          style={!isFilled.name ? { borderColor: "#FF5050" } : {}}
+          id="name"
+          name="name"
+          onChange={handleChange}
+          style={errors.name ? { borderColor: "#FF5050" } : {}}
           placeholder="e.g Jane Appleseed"
         />
         {errors.name && (
@@ -114,21 +100,13 @@ export default function LowerSection({
       </InputSection>
 
       <InputSection>
-        <span>CARD NUMBER</span>
+        <label htmlFor="number">CARD NUMBER</label>
         <input
           value={data.number}
-          onChange={(event) => {
-            let inputValue = event.target.value.replace(/\s+/g, "");
-            let formattedValue = "";
-
-            for (let i = 0; i < inputValue.length; i += 4) {
-              formattedValue += inputValue.slice(i, i + 4) + " ";
-            }
-
-            formattedValue = formattedValue.trim();
-            handleInputChange("number", formattedValue);
-          }}
-          style={!isFilled.number ? { borderColor: "#FF5050" } : {}}
+          id="number"
+          name="number"
+          onChange={handleChange}
+          style={errors.number ? { borderColor: "#FF5050" } : {}}
           maxLength={19}
           type="text"
           placeholder="e.g 1234 5678 9123 0000"
@@ -142,15 +120,15 @@ export default function LowerSection({
 
       <OtherDetailsSection>
         <DoubleInput>
-          <span>EXP.DATE (MM/YY)</span>
+          <label htmlFor="exp-date">EXP. DATE (MM/YY)</label>
           <DateWrap>
             <InputSection>
               <input
+                id="exp-month"
+                name="month"
                 value={data.month}
-                onChange={(event) =>
-                  handleInputChange("month", event.target.value)
-                }
-                style={!isFilled.month ? { borderColor: "#FF5050" } : {}}
+                onChange={handleChange}
+                style={errors.month ? { borderColor: "#FF5050" } : {}}
                 type="text"
                 maxLength={2}
                 placeholder="MM"
@@ -158,11 +136,11 @@ export default function LowerSection({
             </InputSection>
             <InputSection>
               <input
+                id="exp-year"
+                name="year"
                 value={data.year}
-                onChange={(event) =>
-                  handleInputChange("year", event.target.value)
-                }
-                style={!isFilled.year ? { borderColor: "#FF5050" } : {}}
+                onChange={handleChange}
+                style={errors.year ? { borderColor: "#FF5050" } : {}}
                 type="text"
                 maxLength={2}
                 placeholder="YY"
@@ -179,11 +157,13 @@ export default function LowerSection({
         </DoubleInput>
 
         <InputSection>
-          <span>CVC</span>
+          <label htmlFor="cvc">CVC</label>
           <input
+            id="cvc"
+            name="cvc"
             value={data.cvc}
-            onChange={(event) => handleInputChange("cvc", event.target.value)}
-            style={!isFilled.cvc ? { borderColor: "#FF5050" } : {}}
+            onChange={handleChange}
+            style={errors.cvc ? { borderColor: "#FF5050" } : {}}
             type="text"
             maxLength={3}
             placeholder="e.g. 123"
@@ -196,12 +176,12 @@ export default function LowerSection({
         </InputSection>
       </OtherDetailsSection>
 
-      <ConfirmButton onClick={handleClick}>Confirm</ConfirmButton>
+      <ConfirmButton type="submit">Confirm</ConfirmButton>
     </Container>
   );
 }
 
-const Container = styled.section`
+const Container = styled.form`
   padding: 0 2.4rem 4.5rem;
   display: flex;
   flex-direction: column;
@@ -219,7 +199,7 @@ const InputSection = styled.div`
   flex-direction: column;
   gap: 0.9rem;
 
-  span {
+  label {
     color: #21092f;
     font-size: 1.2rem;
     letter-spacing: 1px;

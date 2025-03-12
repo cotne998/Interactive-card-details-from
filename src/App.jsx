@@ -14,32 +14,17 @@ function App() {
     cvc: "",
   });
 
-  const [isFilled, setIsFilled] = useState({
-    name: 1,
-    number: 1,
-    month: 1,
-    year: 1,
-    cvc: 1,
-  });
-
   const [isCompleted, setIsCompleted] = useState(false);
 
   return (
     <Container>
-      <UpperSectionComponent
-        data={data}
-        setData={setData}
-        isFilled={isFilled}
-        setIsFilled={setIsFilled}
-      />
+      <UpperSectionComponent data={data} setData={setData} />
       {isCompleted ? (
         <Complete />
       ) : (
         <LowerSection
           data={data}
           setData={setData}
-          isFilled={isFilled}
-          setIsFilled={setIsFilled}
           isCompleted={isCompleted}
           setIsCompleted={setIsCompleted}
         />
